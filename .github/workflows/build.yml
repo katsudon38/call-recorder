@@ -1,0 +1,45 @@
+name: Build and test CallRecorder
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Test storage and consent logic
+        run: dotnet test ./tests/CallRecorder.Tests.csproj -c Release --logger "trx;LogFileName=results.trx" --results-directory ./test-results
+      - name: Publish x64 and ARM64
+        shell: pwsh
+        run: |
+          foreach ($rid in @('win-x64', 'win-arm64')) {
+            dotnet publish ./src/CallRecorder.csproj -c Release -r $rid --self-contained true -p:PublishSingleFile=true -p:DebugType=None -p:DebugSymbols=false -o "./publish/$rid"
+            if ($LASTEXITCODE -ne 0) { throw "Publish failed: $rid" }
+            Copy-Item README.md,settings.example.json,実機検証手順.md,実機検証結果.csv "./publish/$rid/"
+            Copy-Item licenses "./publish/$rid/" -Recurse
+            '@echo off', 'cd /d "%~dp0"', 'CallRecorder.exe', 'pause' | Set-Content "./publish/$rid/Start-CallRecorder.cmd" -Encoding ascii
+          }
+      - name: Windows console startup smoke test (no audio streams)
+        shell: pwsh
+        run: |
+          ./publish/win-x64/CallRecorder.exe --help
+          if ($LASTEXITCODE -ne 0) { throw 'Startup failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CallRecorder-win-x64
+          path: publish/win-x64/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CallRecorder-win-arm64
+          path: publish/win-arm64/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results/

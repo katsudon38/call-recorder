@@ -1,0 +1,14 @@
+{
+  "recordingDirectory": null,
+  "captureDeviceId": null,
+  "renderDeviceId": null,
+  "defaultDeviceRole": "Communications",
+  "segmentMinutes": 30,
+  "maxSegmentDataBytes": 1073741824,
+  "headerFlushSeconds": 2,
+  "durableFlushSeconds": 10,
+  "queueCapacitySeconds": 30,
+  "queueWarningSeconds": 15,
+  "minimumFreeBytes": 2147483648,
+  "deviceConfiguration": "未分類"
+}
